@@ -1,0 +1,321 @@
+import React, { useState } from 'react';
+
+export default function App() {
+  // --- STATE MANAGEMENT ---
+  const [currentView, setCurrentView] = useState('login'); // login, guru-dashboard, siswa-dashboard, tambah-kuis, tambah-siswa, kerjakan-kuis
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Data Mock untuk Siswa & Guru
+  const [users, setUsers] = useState([
+    { id: 1, username: 'guru', password: '123', role: 'guru', name: 'Pak Budi' },
+    { id: 2, username: 'siswa', password: '123', role: 'siswa', name: 'Andi', points: 150, level: 2, completedQuizzes: [] },
+  ]);
+
+  const [quizzes, setQuizzes] = useState([
+    { id: 1, title: 'Dasar Jaringan Komputer', description: 'Kuis pengenalan topologi dan perangkat jaringan.', questions: [
+      { q: 'Apa kepanjangan dari LAN?', options: ['Local Area Network', 'Large Area Network', 'Logical Area Network'], answer: 0 }
+    ]}
+  ]);
+
+  const [activeQuiz, setActiveQuiz] = useState(null);
+
+  // --- FUNGSI LOGIN ---
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const username = e.target.username.value;
+    const password = e.target.password.value;
+    
+    const user = users.find(u => u.username === username && u.password === password);
+    if (user) {
+      setCurrentUser(user);
+      setCurrentView(user.role === 'guru' ? 'guru-dashboard' : 'siswa-dashboard');
+    } else {
+      alert('Username atau password salah!');
+    }
+  };
+
+  // --- FUNGSI GURU ---
+  const handleAddStudent = (e) => {
+    e.preventDefault();
+    const newUser = {
+      id: Date.now(),
+      username: e.target.username.value,
+      password: e.target.password.value,
+      role: 'siswa',
+      name: e.target.name.value,
+      points: 0,
+      level: 1,
+      completedQuizzes: []
+    };
+    setUsers([...users, newUser]);
+    setCurrentView('guru-dashboard');
+    alert('Siswa berhasil ditambahkan!');
+  };
+
+  const handleAddQuiz = (e) => {
+    e.preventDefault();
+    const newQuiz = {
+      id: Date.now(),
+      title: e.target.title.value,
+      description: e.target.description.value,
+      questions: [
+        { 
+          q: e.target.question.value, 
+          options: [e.target.opt1.value, e.target.opt2.value, e.target.opt3.value], 
+          answer: parseInt(e.target.answer.value) 
+        }
+      ]
+    };
+    setQuizzes([...quizzes, newQuiz]);
+    setCurrentView('guru-dashboard');
+    alert('Kuis berhasil diterbitkan!');
+  };
+
+  const syncGoogleClassroom = () => {
+    // Simulasi penarikan data dari API Google Classroom
+    alert('Mengalihkan ke Otorisasi Google...');
+    setTimeout(() => {
+      const gcrStudents = [
+        { id: 101, username: 'budi_gcr', password: 'gcr', role: 'siswa', name: 'Budi (Classroom)', points: 0, level: 1, completedQuizzes: [] },
+        { id: 102, username: 'siti_gcr', password: 'gcr', role: 'siswa', name: 'Siti (Classroom)', points: 0, level: 1, completedQuizzes: [] }
+      ];
+      setUsers([...users, ...gcrStudents]);
+      alert('Berhasil mengimpor 2 siswa dari Google Classroom!');
+    }, 1500);
+  };
+
+  // --- KOMPONEN UI ---
+
+  // 1. HALAMAN LOGIN
+  if (currentView === 'login') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 font-sans">
+        <div className="bg-white p-10 rounded-3xl shadow-2xl w-96 transform transition-all hover:scale-105">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">TKJ Quest</h1>
+            <p className="text-gray-500 mt-2">Login untuk mulai belajar</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700">Username</label>
+              <input name="username" type="text" className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition" placeholder="guru / siswa" required />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700">Password</label>
+              <input name="password" type="password" className="mt-1 w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition" placeholder="123" required />
+            </div>
+            <button type="submit" className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95">
+              Masuk
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. DASBOR GURU
+  if (currentView === 'guru-dashboard') {
+    const studentsList = users.filter(u => u.role === 'siswa');
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 font-sans">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-10">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">👋 Halo, {currentUser.name}</h1>
+              <p className="text-gray-500">Dasbor Manajemen Kelas</p>
+            </div>
+            <button onClick={() => setCurrentView('login')} className="px-5 py-2 bg-red-100 text-red-600 font-semibold rounded-lg hover:bg-red-200 transition">Logout</button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <button onClick={() => setCurrentView('tambah-kuis')} className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition flex flex-col items-center justify-center group">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition">📝</div>
+              <h3 className="font-bold text-lg text-gray-700">Buat Kuis Baru</h3>
+            </button>
+            <button onClick={() => setCurrentView('tambah-siswa')} className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition flex flex-col items-center justify-center group">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition">🧑‍🎓</div>
+              <h3 className="font-bold text-lg text-gray-700">Tambah Siswa</h3>
+            </button>
+            <button onClick={syncGoogleClassroom} className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition flex flex-col items-center justify-center group relative overflow-hidden">
+              <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition">🏫</div>
+              <h3 className="font-bold text-lg text-gray-700">Sync Google Classroom</h3>
+            </button>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">📈 Perkembangan Siswa</h2>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="p-4 font-semibold text-gray-600">Nama Siswa</th>
+                  <th className="p-4 font-semibold text-gray-600">Level</th>
+                  <th className="p-4 font-semibold text-gray-600">Total Poin</th>
+                  <th className="p-4 font-semibold text-gray-600">Kuis Selesai</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentsList.map(siswa => (
+                  <tr key={siswa.id} className="border-b border-gray-50 hover:bg-indigo-50 transition">
+                    <td className="p-4 font-medium text-gray-800">{siswa.name}</td>
+                    <td className="p-4">
+                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-bold text-sm">Lvl {siswa.level}</span>
+                    </td>
+                    <td className="p-4 text-gray-600 font-semibold">{siswa.points} XP</td>
+                    <td className="p-4 text-gray-600">{siswa.completedQuizzes?.length || 0} Kuis</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. DASBOR SISWA
+  if (currentView === 'siswa-dashboard') {
+    const progress = (currentUser.points % 100); // Asumsi 1 level = 100 poin
+    return (
+      <div className="min-h-screen bg-gray-50 p-8 font-sans">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">Petualangan {currentUser.name} 🚀</h1>
+            <button onClick={() => setCurrentView('login')} className="px-5 py-2 bg-red-100 text-red-600 font-semibold rounded-lg hover:bg-red-200 transition">Logout</button>
+          </div>
+
+          {/* Kartu Profil Gamifikasi */}
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 text-white shadow-xl mb-10 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl opacity-90 mb-1">Status Keahlian</h2>
+              <div className="text-5xl font-extrabold mb-4">Level {currentUser.level}</div>
+              <p className="bg-white/20 px-4 py-2 rounded-lg inline-block backdrop-blur-sm font-semibold">{currentUser.points} Total XP</p>
+            </div>
+            <div className="w-1/3">
+              <div className="flex justify-between text-sm mb-2 font-semibold">
+                <span>Progres ke Level {currentUser.level + 1}</span>
+                <span>{progress}/100 XP</span>
+              </div>
+              <div className="w-full bg-black/20 h-4 rounded-full overflow-hidden">
+                <div className="bg-yellow-400 h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+              </div>
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">🎯 Misi Tersedia</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {quizzes.map(quiz => (
+              <div key={quiz.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group">
+                <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-indigo-600 transition">{quiz.title}</h3>
+                <p className="text-gray-500 mb-6">{quiz.description}</p>
+                <button onClick={() => { setActiveQuiz(quiz); setCurrentView('kerjakan-kuis'); }} className="w-full py-3 bg-indigo-50 text-indigo-600 font-bold rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition">
+                  Mulai Misi
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. FORM TAMBAH SISWA
+  if (currentView === 'tambah-siswa') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Tambah Siswa Baru</h2>
+          <form onSubmit={handleAddStudent} className="space-y-4">
+            <input name="name" placeholder="Nama Lengkap" className="w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition" required />
+            <input name="username" placeholder="Username" className="w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition" required />
+            <input name="password" placeholder="Password" className="w-full px-4 py-3 rounded-xl border bg-gray-50 focus:bg-white transition" required />
+            <div className="flex gap-4 mt-8">
+              <button type="button" onClick={() => setCurrentView('guru-dashboard')} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Batal</button>
+              <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg">Simpan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. FORM TAMBAH KUIS
+  if (currentView === 'tambah-kuis') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex py-10 px-4 justify-center">
+        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-2xl">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Buat Kuis Baru</h2>
+          <form onSubmit={handleAddQuiz} className="space-y-4">
+            <input name="title" placeholder="Judul Kuis" className="w-full px-4 py-3 rounded-xl border font-bold" required />
+            <textarea name="description" placeholder="Deskripsi Misi" className="w-full px-4 py-3 rounded-xl border" rows="2" required></textarea>
+            
+            <div className="bg-indigo-50 p-6 rounded-2xl mt-6 border border-indigo-100">
+              <h3 className="font-bold text-indigo-800 mb-4">Soal 1 (MVP Demo)</h3>
+              <input name="question" placeholder="Pertanyaan..." className="w-full px-4 py-3 rounded-xl border mb-3" required />
+              <div className="space-y-2 mb-4">
+                <input name="opt1" placeholder="Opsi A" className="w-full px-4 py-2 rounded-lg border text-sm" required />
+                <input name="opt2" placeholder="Opsi B" className="w-full px-4 py-2 rounded-lg border text-sm" required />
+                <input name="opt3" placeholder="Opsi C" className="w-full px-4 py-2 rounded-lg border text-sm" required />
+              </div>
+              <select name="answer" className="w-full px-4 py-3 rounded-xl border font-semibold text-gray-700">
+                <option value="0">Jawaban Benar: Opsi A</option>
+                <option value="1">Jawaban Benar: Opsi B</option>
+                <option value="2">Jawaban Benar: Opsi C</option>
+              </select>
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button type="button" onClick={() => setCurrentView('guru-dashboard')} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200">Batal</button>
+              <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg">Terbitkan Kuis</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // 6. HALAMAN PENGERJAAN KUIS
+  if (currentView === 'kerjakan-kuis' && activeQuiz) {
+    const handleSubmitQuiz = (e) => {
+      e.preventDefault();
+      // Logika MVP: Jika dijawab maka dapat 50 poin
+      const updatedUser = { ...currentUser, points: currentUser.points + 50, level: Math.floor((currentUser.points + 50) / 100) + 1 };
+      
+      const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+      setUsers(newUsers);
+      setCurrentUser(updatedUser);
+      
+      alert(`Misi Selesai! Kamu mendapatkan +50 XP!`);
+      setCurrentView('siswa-dashboard');
+    };
+
+    return (
+      <div className="min-h-screen bg-indigo-900 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-3xl">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">{activeQuiz.title}</h1>
+          <p className="text-gray-500 mb-8 pb-6 border-b">{activeQuiz.description}</p>
+          
+          <form onSubmit={handleSubmitQuiz}>
+            {activeQuiz.questions.map((q, idx) => (
+              <div key={idx} className="mb-8">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">{idx + 1}. {q.q}</h3>
+                <div className="space-y-3">
+                  {q.options.map((opt, oIdx) => (
+                    <label key={oIdx} className="flex items-center p-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition">
+                      <input type="radio" name={`q${idx}`} value={oIdx} className="w-5 h-5 text-indigo-600" required />
+                      <span className="ml-3 font-medium text-gray-700">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button type="submit" className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+              Kirim Jawaban
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
